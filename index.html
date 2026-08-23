@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoUPSC — Interactive Historical Timeline & Revision Tool</title>
+    <meta name="description" content="A powerful historical timeline builder and revision tool for UPSC Civil Services Examination aspirants.">
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+
+        <!-- Top Header Navigation -->
+        <header class="app-header">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <span class="logo-icon">⏳</span>
+                    <div class="brand-text">
+                        <h1>Chrono<span>UPSC</span></h1>
+                        <span class="brand-tagline">UPSC History Revision & Timeline</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="main-nav">
+                <button id="tab-timeline" class="nav-tab active" data-view="timeline">
+                    <span class="tab-icon">📍</span> Timeline View
+                </button>
+                <button id="tab-events" class="nav-tab" data-view="events">
+                    <span class="tab-icon">📋</span> All Events <span id="nav-event-count" class="badge-count">0</span>
+                </button>
+                <button id="tab-quiz" class="nav-tab" data-view="quiz">
+                    <span class="tab-icon">🧩</span> Chronology Quiz
+                </button>
+            </nav>
+
+            <div class="header-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="global-search" placeholder="Search event, person, place, year..." aria-label="Search events">
+                    <button id="btn-clear-search" class="clear-search-btn" title="Clear search" style="display: none;">✕</button>
+                </div>
+
+                <div class="revision-toggle-wrapper">
+                    <label class="toggle-switch" title="Revision Mode masks event details until revealed">
+                        <input type="checkbox" id="revision-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label">
+                        <span class="brain-icon">🧠</span> Revision Mode
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout: Left Form Sidebar + Right Dynamic Main View -->
+        <main class="app-main">
+
+            <!-- Left Sidebar: Add / Edit Event Form -->
+            <aside class="sidebar-panel">
+                <div class="sidebar-header">
+                    <h2 id="form-title"><span class="form-icon">➕</span> Add Historical Event</h2>
+                    <span id="edit-badge" class="badge-edit" style="display: none;">Editing Mode</span>
+                </div>
+
+                <form id="event-form" novalidate>
+                    <input type="hidden" id="event-id">
+
+                    <!-- Year/Date -->
+                    <div class="form-group">
+                        <label for="event-year">Year / Date <span class="required">*</span></label>
+                        <div class="input-with-hint">
+                            <input type="number" id="event-year" placeholder="e.g. 1757 (use negative for BC/BCE)" required>
+                            <span class="field-hint">Use negative numbers for BC/BCE (e.g. -2500 for Indus Valley)</span>
+                        </div>
+                        <span class="error-msg" id="error-year">Year is required</span>
+                    </div>
+
+                    <!-- Event Name -->
+                    <div class="form-group">
+                        <label for="event-name">Event Name <span class="required">*</span></label>
+                        <input type="text" id="event-name" placeholder="e.g. Battle of Plassey" required>
+                        <span class="error-msg" id="error-name">Event name is required</span>
+                    </div>
+
+                    <!-- Key Person(s) -->
+                    <div class="form-group">
+                        <label for="event-person">Key Person(s)</label>
+                        <input type="text" id="event-person" placeholder="e.g. Robert Clive, Siraj-ud-Daulah">
+                    </div>
+
+                    <!-- Place / Region -->
+                    <div class="form-group">
+                        <label for="event-place">Place / Region</label>
+                        <input type="text" id="event-place" placeholder="e.g. Palashi, Bengal">
+                    </div>
+
+                    <!-- Category -->
+                    <div class="form-group">
+                        <label for="event-category">History Category</label>
+                        <select id="event-category">
+                            <option value="Ancient">Ancient India</option>
+                            <option value="Medieval">Medieval India</option>
+                            <option value="Modern" selected>Modern India</option>
+                            <option value="World History">World History</option>
+                        </select>
+                    </div>
+
+                    <!-- Importance Rating (1 to 5 Stars) -->
+                    <div class="form-group">
+                        <label>Importance for UPSC (1–5)</label>
+                        <div class="star-rating-picker" id="star-picker">
+                            <span class="star" data-value="1">★</span>
+                            <span class="star" data-value="2">★</span>
+                            <span class="star" data-value="3">★</span>
+                            <span class="star" data-value="4">★</span>
+                            <span class="star" data-value="5">★</span>
+                        </div>
+                        <input type="hidden" id="event-importance" value="3">
+                    </div>
+
+                    <!-- Short Description -->
+                    <div class="form-group">
+                        <label for="event-description">Short Description / Key Points</label>
+                        <textarea id="event-description" rows="3" placeholder="Key historical significance, treaties, leaders involved..."></textarea>
+                    </div>
+
+                    <!-- UPSC Tags -->
+                    <div class="form-group">
+                        <label>UPSC Syllabus Tags</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-pill">
+                                <input type="checkbox" name="upsc-tag" value="GS1" checked> GS1
+                            </label>
+                            <label class="checkbox-pill">
+                                <input type="checkbox" name="upsc-tag" value="Prelims" checked> Prelims
+                            </label>
+                            <label class="checkbox-pill">
+                                <input type="checkbox" name="upsc-tag" value="Mains"> Mains
+                            </label>
+                            <label class="checkbox-pill">
+                                <input type="checkbox" name="upsc-tag" value="Essay"> Essay
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Form Buttons -->
+                    <div class="form-actions">
+                        <button type="submit" id="btn-save-event" class="btn btn-primary">
+                            <span class="btn-icon">💾</span> Save Event
+                        </button>
+                        <button type="button" id="btn-reset-form" class="btn btn-secondary">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Quick Seed Demo Data Helper -->
+                <div class="demo-seed-box">
+                    <p>New to ChronoUPSC?</p>
+                    <button id="btn-seed-data" class="btn btn-ghost">
+                        ✨ Load Sample UPSC History Events
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <section class="main-content">
+
+                <!-- Filter Bar (Global for Timeline & Events view) -->
+                <div class="filter-toolbar">
+                    <div class="category-pills">
+                        <span class="filter-label">Category:</span>
+                        <button class="cat-pill active" data-cat="ALL">All</button>
+                        <button class="cat-pill cat-ancient" data-cat="Ancient">Ancient</button>
+                        <button class="cat-pill cat-medieval" data-cat="Medieval">Medieval</button>
+                        <button class="cat-pill cat-modern" data-cat="Modern">Modern</button>
+                        <button class="cat-pill cat-world" data-cat="World History">World History</button>
+                    </div>
+
+                    <div class="tag-filter-group">
+                        <span class="filter-label">Tag:</span>
+                        <select id="tag-filter">
+                            <option value="ALL">All Tags</option>
+                            <option value="GS1">GS1</option>
+                            <option value="Prelims">Prelims</option>
+                            <option value="Mains">Mains</option>
+                            <option value="Essay">Essay</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: TIMELINE VIEW -->
+                <div id="view-timeline" class="view-panel active">
+                    <!-- Timeline Specific Toolbar -->
+                    <div class="timeline-controls-bar">
+                        <div class="controls-group">
+                            <button id="btn-play-timeline" class="btn btn-accent btn-sm">
+                                <span class="play-icon">▶</span> Play Timeline
+                            </button>
+                            <span id="playback-status" class="playback-indicator" style="display: none;">Playing...</span>
+                        </div>
+
+                        <div class="legend-bar">
+                            <span class="legend-item"><span class="dot dot-ancient"></span> Ancient</span>
+                            <span class="legend-item"><span class="dot dot-medieval"></span> Medieval</span>
+                            <span class="legend-item"><span class="dot dot-modern"></span> Modern</span>
+                            <span class="legend-item"><span class="dot dot-world"></span> World</span>
+                        </div>
+
+                        <div class="controls-group zoom-controls">
+                            <span class="control-label">Zoom:</span>
+                            <button id="btn-zoom-out" class="btn btn-icon btn-sm" title="Zoom Out">-</button>
+                            <span id="zoom-level" class="zoom-text">100%</span>
+                            <button id="btn-zoom-in" class="btn btn-icon btn-sm" title="Zoom In">+</button>
+                            <button id="btn-zoom-reset" class="btn btn-ghost btn-sm" title="Reset Zoom">Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Horizontal Scrollable Timeline Container -->
+                    <div class="timeline-wrapper" id="timeline-wrapper">
+                        <!-- Empty state when no events exist or match -->
+                        <div id="timeline-empty-state" class="empty-state" style="display: none;">
+                            <div class="empty-icon">📜</div>
+                            <h3>No Events Found</h3>
+                            <p>No historical events match your current search/filter, or your timeline is empty.</p>
+                            <button id="btn-empty-add" class="btn btn-primary btn-sm">Add Your First Event</button>
+                        </div>
+
+                        <!-- Timeline Main Canvas Track -->
+                        <div id="timeline-track" class="timeline-track">
+                            <!-- Axis Line -->
+                            <div class="timeline-axis"></div>
+                            <!-- Dynamic Event Nodes Rendered Here -->
+                            <div id="timeline-nodes-container" class="timeline-nodes-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: ALL EVENTS TABLE VIEW -->
+                <div id="view-events" class="view-panel">
+                    <div class="events-table-header">
+                        <h2>All Stored Historical Events</h2>
+                        <span id="table-summary-count" class="summary-text">Showing 0 events</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="events-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="year">Year <span class="sort-icon">↕</span></th>
+                                    <th class="sortable" data-sort="name">Event Name <span class="sort-icon">↕</span></th>
+                                    <th>Category</th>
+                                    <th>Key Person(s)</th>
+                                    <th>Place</th>
+                                    <th class="sortable" data-sort="importance">Importance <span class="sort-icon">↕</span></th>
+                                    <th>Tags</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="events-table-body">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                        <div id="table-empty-state" class="empty-state" style="display: none;">
+                            <p>No historical events recorded yet. Use the sidebar form to add events!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: CHRONOLOGY QUIZ VIEW -->
+                <div id="view-quiz" class="view-panel">
+                    <div class="quiz-container">
+                        <div class="quiz-header">
+                            <div class="quiz-title-badge">
+                                <span class="quiz-icon">🧩</span>
+                                <h2>Chronology Quiz Challenge</h2>
+                            </div>
+                            <p class="quiz-subtitle">Arrange these historical events in chronological order from earliest to latest!</p>
+                        </div>
+
+                        <!-- Quiz State 1: Insufficient events warning -->
+                        <div id="quiz-not-enough-events" class="quiz-notice-card" style="display: none;">
+                            <div class="notice-icon">⚠️</div>
+                            <h3>At Least 4 Events Required</h3>
+                            <p>You currently have fewer than 4 events in your database. Add a few more events or click below to load sample UPSC events to unlock quiz mode.</p>
+                            <button id="btn-quiz-seed" class="btn btn-primary">Load Sample UPSC Events</button>
+                        </div>
+
+                        <!-- Quiz State 2: Active Challenge Board -->
+                        <div id="quiz-board-area" class="quiz-board">
+                            <div class="quiz-toolbar">
+                                <span class="quiz-step-info">Step 1: Re-order the items using <span class="highlight">Drag & Drop</span> or <span class="highlight">Up / Down</span> buttons.</span>
+                                <button id="btn-new-quiz" class="btn btn-secondary btn-sm">🔀 New Random Quiz</button>
+                            </div>
+
+                            <ul id="quiz-items-list" class="quiz-items-list">
+                                <!-- Quiz Cards rendered here -->
+                            </ul>
+
+                            <div class="quiz-actions">
+                                <button id="btn-submit-quiz" class="btn btn-accent btn-lg">
+                                    <span class="btn-icon">✅</span> Check Chronology Score
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Result Modal / Feedback Card -->
+                        <div id="quiz-result-card" class="quiz-result-card" style="display: none;">
+                            <div class="result-header">
+                                <span id="result-emoji" class="result-emoji">🎉</span>
+                                <h3 id="result-title">Quiz Completed!</h3>
+                                <div id="result-score-badge" class="score-badge">Score: 4 / 4</div>
+                            </div>
+                            <p id="result-message" class="result-desc"></p>
+
+                            <div class="comparison-grid">
+                                <div class="comp-column">
+                                    <h4>Your Given Order</h4>
+                                    <ol id="given-order-list" class="order-list"></ol>
+                                </div>
+                                <div class="comp-column">
+                                    <h4>Correct Chronological Order</h4>
+                                    <ol id="correct-order-list" class="order-list correct"></ol>
+                                </div>
+                            </div>
+
+                            <div class="result-actions">
+                                <button id="btn-retry-quiz" class="btn btn-primary">Try Another Challenge</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- EVENT DETAILS MODAL VIEW -->
+    <div id="event-modal" class="modal-backdrop" style="display: none;" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-labelledby="modal-event-title">
+            <button id="btn-close-modal" class="modal-close-btn" title="Close modal">✕</button>
+
+            <div class="modal-header">
+                <div class="modal-category-badge" id="modal-category">Category</div>
+                <div class="modal-stars" id="modal-importance">⭐⭐⭐⭐⭐</div>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-year" id="modal-year">1757 AD</div>
+
+                <!-- Title & Content - Masked in Revision Mode -->
+                <div id="modal-content-area" class="modal-content-wrapper">
+                    <h2 class="modal-title" id="modal-event-name">Event Name</h2>
+
+                    <div class="meta-row">
+                        <div class="meta-item" id="modal-person-wrapper">
+                            <span class="meta-icon">👤</span>
+                            <span class="meta-label">Person(s):</span>
+                            <span id="modal-person" class="meta-value">Robert Clive</span>
+                        </div>
+                        <div class="meta-item" id="modal-place-wrapper">
+                            <span class="meta-icon">📍</span>
+                            <span class="meta-label">Place:</span>
+                            <span id="modal-place" class="meta-value">Bengal</span>
+                        </div>
+                    </div>
+
+                    <div class="description-box">
+                        <h4>Description / Significance:</h4>
+                        <p id="modal-description">Detailed description will appear here...</p>
+                    </div>
+
+                    <div class="tags-container">
+                        <span class="tags-label">UPSC Tags:</span>
+                        <div id="modal-tags" class="tags-list">
+                            <!-- Tag pills -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Revision Mask Reveal Overlay (shown when Revision Mode is ON and details hidden) -->
+                <div id="revision-mask-overlay" class="revision-mask-overlay" style="display: none;">
+                    <div class="mask-box">
+                        <span class="mask-icon">🔒</span>
+                        <h3>Event Details Masked</h3>
+                        <p>Revision mode is active. Test your knowledge of this date before revealing!</p>
+                        <button id="btn-reveal-details" class="btn btn-accent">
+                            🔓 Reveal Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-modal-edit" class="btn btn-secondary">
+                    ✏️ Edit Event
+                </button>
+                <button id="btn-modal-delete" class="btn btn-danger">
+                    🗑️ Delete
+                </button>
+                <button id="btn-modal-close" class="btn btn-ghost">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
